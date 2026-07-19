@@ -83,19 +83,19 @@ export function computeProjectPriority(s: ProjectScores): number {
   return Math.round((total / max) * 100)
 }
 
-/** Progresso de um objetivo quantificável (0–100). */
+/** Progresso de um objetivo quantificável (0–100), medido a partir do baseline. */
 export function computeGoalProgress(g: Goal): number | null {
   if (g.current === undefined || g.target === undefined) return null
   if (g.direction === 'down') {
-    // Ex.: perder peso. Assumimos que o ponto de partida foi current no dia 0.
-    // Progresso relativo em direção ao alvo (target < baseline).
-    if (g.current <= g.target) return 100
-    // Sem baseline explícito, usamos current vs target como proximidade.
-    const span = Math.max(g.current, g.target) || 1
-    return clamp(Math.round((1 - (g.current - g.target) / span) * 100))
+    // Ex.: emagrecer. baseline = peso inicial; alvo < baseline.
+    const start = g.baseline ?? g.current
+    if (start <= g.target) return g.current <= g.target ? 100 : 0
+    return clamp(Math.round(((start - g.current) / (start - g.target)) * 100))
   }
-  if (g.target === 0) return 0
-  return clamp(Math.round((g.current / g.target) * 100))
+  // Aumentar (ex.: renda a partir do zero).
+  const start = g.baseline ?? 0
+  if (g.target === start) return 0
+  return clamp(Math.round(((g.current - start) / (g.target - start)) * 100))
 }
 
 /** Ranking de projetos por prioridade (desc). */

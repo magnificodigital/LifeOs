@@ -49,6 +49,35 @@ export default function Projects() {
         />
       )}
 
+      {/* Recomendação da IA: por onde começar e em que ordem */}
+      {ranked.length > 0 && !inExecution && (
+        <Fade>
+          <Card className="mb-4 border-accent/20 bg-gradient-to-br from-accent/[0.1] to-transparent">
+            <div className="flex items-start gap-3">
+              <Sparkles size={18} className="mt-0.5 shrink-0 text-accent-soft" />
+              <div>
+                <p className="section-title !text-accent-soft">Recomendação da IA — comece por aqui</p>
+                <p className="mt-1 text-white">
+                  Coloque <strong>"{ranked[0].title}"</strong> em execução primeiro (prioridade{' '}
+                  {computeProjectPriority(ranked[0].scores)}/100).{' '}
+                  {ranked[1] && (
+                    <>
+                      Depois: <span className="text-ink-300">{ranked.slice(1, 3).map((p) => p.title).join(' → ')}</span>.
+                    </>
+                  )}
+                </p>
+                <p className="mt-1.5 text-sm text-ink-400">
+                  Um projeto de cada vez. Termine (ou valide) antes de abrir o próximo — é assim que você sai do zero mais rápido.
+                </p>
+                <button className="btn-primary mt-3 !py-1.5" onClick={() => setInExecution(ranked[0].id)}>
+                  <Play size={14} /> Executar "{ranked[0].title}"
+                </button>
+              </div>
+            </div>
+          </Card>
+        </Fade>
+      )}
+
       <div className="space-y-3">
         {ranked.map((p, i) => {
           const priority = computeProjectPriority(p.scores)

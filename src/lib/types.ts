@@ -32,20 +32,32 @@ export const LIFE_AREAS: { key: LifeArea; label: string; emoji: string }[] = [
   { key: 'tempoLivre', label: 'Tempo Livre', emoji: '🏖️' },
 ]
 
-/** Objetivo de longo prazo (o "para onde" da vida — horizonte de 10 anos). */
+/** Um passo rastreável do plano de um objetivo (o usuário "vai traçando"). */
+export interface GoalStep {
+  id: string
+  title: string
+  done: boolean
+}
+
+/** Objetivo de longo prazo (o "para onde" da vida). */
 export interface Goal {
   id: string
   area: LifeArea
   title: string
   description?: string
-  /** Valor atual e alvo — para objetivos quantificáveis (patrimônio, peso...). */
+  /** Valor atual e alvo — para objetivos quantificáveis (renda, peso...). */
   metricLabel?: string
   current?: number
   target?: number
   unit?: string
   /** Direção do progresso: 'up' quer aumentar, 'down' quer diminuir (ex: peso). */
   direction?: 'up' | 'down'
+  /** Valor de partida — usado para medir progresso relativo (ex.: peso inicial). */
+  baseline?: number
   deadline?: string // ISO date
+  /** Plano de ação ordenado e marcável — o guia rumo ao objetivo. */
+  steps: GoalStep[]
+  /** Sugestões livres da IA (texto). */
   nextSteps: string[]
   createdAt: string
 }
@@ -191,6 +203,22 @@ export interface WeeklyReview {
   tempoPerdido: string
   tempoInvestido: string
 }
+
+/** Hábito diário — a unidade simples e gamificada do dia a dia. */
+export interface Habit {
+  id: string
+  title: string
+  emoji: string
+  xp: number
+  area: LifeArea
+  /** Meta opcional a que o hábito serve (para "traçar avanços"). */
+  goalId?: string
+  active: boolean
+  createdAt: string
+}
+
+/** Registro de hábitos concluídos por dia: { 'YYYY-MM-DD': ['id1','id2'] }. */
+export type HabitLog = Record<string, string[]>
 
 export interface ChatMessage {
   id: string

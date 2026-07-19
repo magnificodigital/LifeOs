@@ -1,5 +1,7 @@
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import Layout from '@/components/Layout'
+import Today from '@/pages/Today'
+import Progress from '@/pages/Progress'
 import Dashboard from '@/pages/Dashboard'
 import LifeScore from '@/pages/LifeScore'
 import Goals from '@/pages/Goals'
@@ -9,20 +11,21 @@ import Ideas from '@/pages/Ideas'
 import Assistant from '@/pages/Assistant'
 import Reviews from '@/pages/Reviews'
 
-// HashRouter: funciona em qualquer host estático (GitHub Pages, Netlify, etc.)
-// sem exigir configuração de rewrite no servidor.
+// HashRouter: funciona em qualquer host estático sem configuração de servidor.
 const router = createHashRouter([
   {
     path: '/',
     element: <Layout />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: 'lifescore', element: <LifeScore /> },
+      { index: true, element: <Today /> },
+      { path: 'progresso', element: <Progress /> },
       { path: 'objetivos', element: <Goals /> },
-      { path: 'metas', element: <Metas /> },
+      { path: 'assistente', element: <Assistant /> },
+      { path: 'painel', element: <Dashboard /> },
       { path: 'projetos', element: <Projects /> },
       { path: 'ideias', element: <Ideas /> },
-      { path: 'assistente', element: <Assistant /> },
+      { path: 'metas', element: <Metas /> },
+      { path: 'lifescore', element: <LifeScore /> },
       { path: 'revisoes', element: <Reviews /> },
     ],
   },

@@ -6,6 +6,8 @@ import type {
   DailyReview,
   DayLog,
   Goal,
+  Habit,
+  HabitLog,
   Idea,
   Meta,
   Project,
@@ -25,6 +27,8 @@ interface State {
   projects: Project[]
   ideas: Idea[]
   logs: DayLog[]
+  habits: Habit[]
+  habitLog: HabitLog
   dailyReviews: DailyReview[]
   weeklyReviews: WeeklyReview[]
   chat: ChatMessage[]
@@ -34,6 +38,9 @@ interface State {
   addGoal: (g: Omit<Goal, 'id' | 'createdAt'>) => void
   updateGoal: (id: string, patch: Partial<Goal>) => void
   removeGoal: (id: string) => void
+  addGoalStep: (goalId: string, title: string) => void
+  toggleGoalStep: (goalId: string, stepId: string) => void
+  removeGoalStep: (goalId: string, stepId: string) => void
 
   // Metas
   addMeta: (m: Omit<Meta, 'id' | 'createdAt' | 'done'>) => void
@@ -46,11 +53,16 @@ interface State {
   setOneThing: (id: string) => void
   removeTask: (id: string) => void
 
+  // Habits
+  addHabit: (h: Omit<Habit, 'id' | 'createdAt' | 'active'>) => void
+  updateHabit: (id: string, patch: Partial<Habit>) => void
+  removeHabit: (id: string) => void
+  toggleHabit: (date: string, id: string) => void
+
   // Projects
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void
   updateProject: (id: string, patch: Partial<Project>) => void
   setProjectScores: (id: string, scores: ProjectScores) => void
-  /** Coloca um projeto em execução — força a Regra do Projeto Único. */
   setInExecution: (id: string) => void
   removeProject: (id: string) => void
 
@@ -74,87 +86,174 @@ interface State {
   resetAll: () => void
 }
 
+const step = (title: string, done = false) => ({ id: uid(), title, done })
+
 // ---------------------------------------------------------------------------
-// Dados de exemplo — um usuário fictício alinhado ao briefing (Tim Ferriss etc.)
+// Dados iniciais — os OBJETIVOS REAIS do usuário, já com plano de ação.
 // ---------------------------------------------------------------------------
 function seed() {
   const goals: Goal[] = [
     {
-      id: 'g-fin', area: 'financas', title: 'Patrimônio de R$ 10 milhões',
-      metricLabel: 'Patrimônio', current: 1850000, target: 10000000, unit: 'R$', direction: 'up',
-      deadline: '2032-12-31',
-      nextSteps: ['Escalar o produto principal', 'Automatizar aquisição', 'Investir 30% da receita'],
-      createdAt: '2026-01-02',
+      id: 'g-renda',
+      area: 'financas',
+      title: 'Sair do zero → R$ 10.000/mês',
+      description: 'Renda mensal recorrente que sustente o padrão da família. Prioridade máxima.',
+      metricLabel: 'Renda mensal',
+      current: 0,
+      baseline: 0,
+      target: 10000,
+      unit: 'R$/mês',
+      direction: 'up',
+      deadline: '2026-12-31',
+      steps: [
+        step('Escolher UMA oferta/projeto principal para focar'),
+        step('Definir a oferta: o que vende, para quem e por quanto'),
+        step('Conseguir os 3 primeiros clientes pagantes'),
+        step('Chegar a R$ 3.000/mês'),
+        step('Automatizar entrega e captação de clientes'),
+        step('Escalar até R$ 10.000/mês recorrentes'),
+      ],
+      nextSteps: [
+        'Foque em UMA oferta até validar — dispersão mata a velocidade.',
+        'Priorize receita recorrente sobre trabalho pontual.',
+      ],
+      createdAt: todayISO(),
     },
     {
-      id: 'g-casa', area: 'financas', title: 'Casa dos sonhos até R$ 3 milhões',
-      metricLabel: 'Reservado', current: 420000, target: 3000000, unit: 'R$', direction: 'up',
-      deadline: '2030-06-30', nextSteps: ['Manter reserva dedicada', 'Rever após próximo marco de receita'],
-      createdAt: '2026-01-02',
+      id: 'g-peso',
+      area: 'saude',
+      title: 'Emagrecer 8 kg até dez/2026',
+      description: 'Ajuste o peso atual nos números. Aqui medimos os kg que faltam para a meta.',
+      metricLabel: 'kg restantes',
+      current: 8,
+      baseline: 8,
+      target: 0,
+      unit: 'kg',
+      direction: 'down',
+      deadline: '2026-12-31',
+      steps: [
+        step('Pesar e registrar o peso inicial'),
+        step('Treino de força 4×/semana'),
+        step('Ajustar dieta para déficit calórico leve'),
+        step('Beber 3L de água por dia'),
+        step('Dormir 7h+ por noite'),
+        step('Reavaliar o peso a cada 2 semanas'),
+      ],
+      nextSteps: ['Consistência > intensidade. 4 treinos por semana batem qualquer dieta radical.'],
+      createdAt: todayISO(),
     },
     {
-      id: 'g-saude', area: 'saude', title: 'Perder 8 kg e manter',
-      metricLabel: 'Peso', current: 86, target: 78, unit: 'kg', direction: 'down',
-      deadline: '2026-12-31', nextSteps: ['Treino de força 4×/semana', 'Déficit calórico leve', 'Dormir 7h30'],
-      createdAt: '2026-01-02',
+      id: 'g-leitura',
+      area: 'conhecimento',
+      title: 'Ler mais livros (meta: 12 no ano)',
+      metricLabel: 'Livros lidos',
+      current: 0,
+      baseline: 0,
+      target: 12,
+      unit: 'livros',
+      direction: 'up',
+      deadline: '2026-12-31',
+      steps: [
+        step('Escolher o próximo livro'),
+        step('Ler 20 minutos por dia'),
+        step('Terminar 1 livro por mês'),
+        step('Anotar 3 aprendizados de cada livro'),
+      ],
+      nextSteps: ['20 minutos por dia = ~1 livro por mês. O hábito vence a meta.'],
+      createdAt: todayISO(),
     },
     {
-      id: 'g-fam', area: 'familia', title: 'Viajar mais com a família',
-      nextSteps: ['3 viagens este ano', 'Sextas sem trabalho'], createdAt: '2026-01-02',
-    },
-    {
-      id: 'g-tempo', area: 'tempoLivre', title: 'Trabalhar só em projetos importantes',
-      nextSteps: ['Aplicar a Regra do Projeto Único', 'Delegar o operacional'], createdAt: '2026-01-02',
+      id: 'g-lancar',
+      area: 'negocios',
+      title: 'Finalizar e lançar 1 projeto',
+      metricLabel: 'Projetos lançados',
+      current: 0,
+      baseline: 0,
+      target: 1,
+      unit: 'projeto',
+      direction: 'up',
+      deadline: '2026-12-31',
+      steps: [
+        step('Listar todos os projetos em aberto'),
+        step('Escolher 1 para lançar primeiro (Regra do Projeto Único)'),
+        step('Definir o escopo mínimo do lançamento'),
+        step('Marcar uma data de lançamento'),
+        step('Lançar'),
+        step('Divulgar para conseguir os primeiros usuários'),
+      ],
+      nextSteps: ['Lançado imperfeito vale mais que perfeito na gaveta.'],
+      createdAt: todayISO(),
     },
   ]
 
+  const habits: Habit[] = [
+    { id: 'h-deep', title: '1h de Deep Work no projeto', emoji: '🎯', xp: 25, area: 'negocios', goalId: 'g-renda', active: true, createdAt: todayISO() },
+    { id: 'h-vendas', title: 'Uma ação de vendas/receita', emoji: '💸', xp: 20, area: 'financas', goalId: 'g-renda', active: true, createdAt: todayISO() },
+    { id: 'h-treino', title: 'Treinar', emoji: '💪', xp: 20, area: 'saude', goalId: 'g-peso', active: true, createdAt: todayISO() },
+    { id: 'h-comer', title: 'Comer bem (déficit leve)', emoji: '🥗', xp: 10, area: 'saude', goalId: 'g-peso', active: true, createdAt: todayISO() },
+    { id: 'h-agua', title: 'Beber 3L de água', emoji: '💧', xp: 5, area: 'saude', goalId: 'g-peso', active: true, createdAt: todayISO() },
+    { id: 'h-dormir', title: 'Dormir 7h+', emoji: '😴', xp: 10, area: 'saude', goalId: 'g-peso', active: true, createdAt: todayISO() },
+    { id: 'h-ler', title: 'Ler 20 minutos', emoji: '📚', xp: 10, area: 'conhecimento', goalId: 'g-leitura', active: true, createdAt: todayISO() },
+    { id: 'h-medita', title: 'Meditar 10 minutos', emoji: '🧘', xp: 5, area: 'energia', active: true, createdAt: todayISO() },
+  ]
+
+  // Histórico de hábitos: ofensiva de alguns dias terminando ontem (hoje fica p/ o usuário).
+  const habitLog: HabitLog = {}
+  const pattern = [
+    ['h-deep', 'h-treino', 'h-ler', 'h-agua', 'h-dormir'],
+    ['h-deep', 'h-vendas', 'h-comer', 'h-agua', 'h-medita'],
+    ['h-treino', 'h-ler', 'h-agua', 'h-dormir'],
+    ['h-deep', 'h-vendas', 'h-treino', 'h-comer', 'h-agua', 'h-ler', 'h-dormir'],
+    ['h-ler', 'h-agua', 'h-comer'],
+    ['h-deep', 'h-treino', 'h-vendas', 'h-agua'],
+  ]
+  for (let i = 1; i <= pattern.length; i++) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    habitLog[d.toISOString().slice(0, 10)] = pattern[i - 1]
+  }
+
   const metas: Meta[] = [
-    { id: 'm-a1', horizon: 'anual', title: 'Levar o negócio a R$ 3M de receita', goalId: 'g-fin', done: false, createdAt: '2026-01-02' },
-    { id: 'm-t1', horizon: 'trimestral', title: 'Lançar a v2 do produto', goalId: 'g-fin', parentId: 'm-a1', done: false, createdAt: '2026-01-02' },
-    { id: 'm-me1', horizon: 'mensal', title: 'Automatizar onboarding de clientes', goalId: 'g-fin', parentId: 'm-t1', done: false, createdAt: '2026-07-01' },
-    { id: 'm-s1', horizon: 'semanal', title: 'Fechar 2 novos clientes', goalId: 'g-fin', parentId: 'm-me1', done: false, createdAt: '2026-07-13' },
-    { id: 'm-sd', horizon: 'semanal', title: 'Treinar 4×', goalId: 'g-saude', done: false, createdAt: '2026-07-13' },
-    { id: 'm-d1', horizon: 'diaria', title: 'Bloco de Deep Work no produto', goalId: 'g-fin', parentId: 'm-s1', done: false, createdAt: todayISO() },
+    { id: 'm-s1', horizon: 'semanal', title: 'Conseguir 1 cliente pagante', goalId: 'g-renda', done: false, createdAt: todayISO() },
+    { id: 'm-s2', horizon: 'semanal', title: 'Treinar 4×', goalId: 'g-peso', done: false, createdAt: todayISO() },
   ]
 
   const tasks: Task[] = [
-    { id: 't1', title: 'Escrever a página de vendas da v2', metaId: 'm-d1', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
-    { id: 't2', title: 'Responder e-mails de suporte', metaId: 'm-s1', done: false, date: todayISO(), createdAt: todayISO() },
-    { id: 't3', title: 'Treino de força (pernas)', metaId: 'm-sd', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't1', title: 'Definir minha oferta principal em 1 frase', metaId: 'm-s1', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
   ]
 
-  const mkScores = (s: Partial<ProjectScores>): ProjectScores => ({
+  const mk = (s: Partial<ProjectScores>): ProjectScores => ({
     impactoFinanceiro: 5, proposito: 5, escalabilidade: 5, tempoRetorno: 5,
     complexidade: 5, automacao: 5, sinergia: 5, potencialIA: 5, ...s,
   })
 
+  // Exemplos de projetos para a IA demonstrar "por onde começar". Edite à vontade.
   const projects: Project[] = [
     {
-      id: 'p1', title: 'Produto SaaS v2', status: 'execucao', goalId: 'g-fin',
-      description: 'A alavanca principal de receita recorrente.',
-      scores: mkScores({ impactoFinanceiro: 9, proposito: 8, escalabilidade: 9, tempoRetorno: 7, complexidade: 6, automacao: 8, sinergia: 8, potencialIA: 9 }),
-      createdAt: '2026-05-10',
+      id: 'p-serv', title: 'Serviço/Freelance (renda rápida)', status: 'backlog', goalId: 'g-renda',
+      description: 'Dinheiro entra rápido, mas troca tempo por dinheiro — pouca escala.',
+      scores: mk({ impactoFinanceiro: 7, proposito: 4, escalabilidade: 2, tempoRetorno: 9, complexidade: 8, automacao: 2, sinergia: 4, potencialIA: 3 }),
+      createdAt: todayISO(),
     },
     {
-      id: 'p2', title: 'Canal no YouTube', status: 'incubacao',
-      description: 'Audiência de longo prazo, retorno lento.',
-      scores: mkScores({ impactoFinanceiro: 4, proposito: 7, escalabilidade: 8, tempoRetorno: 2, complexidade: 4, automacao: 3, sinergia: 6, potencialIA: 6 }),
-      createdAt: '2026-06-20',
+      id: 'p-prod', title: 'Produto digital / SaaS', status: 'backlog', goalId: 'g-renda',
+      description: 'Recorrente e escalável, retorno mais lento no começo.',
+      scores: mk({ impactoFinanceiro: 8, proposito: 8, escalabilidade: 9, tempoRetorno: 4, complexidade: 5, automacao: 8, sinergia: 7, potencialIA: 9 }),
+      createdAt: todayISO(),
     },
     {
-      id: 'p3', title: 'Consultoria 1:1', status: 'backlog',
-      description: 'Alto valor por hora, mas não escala.',
-      scores: mkScores({ impactoFinanceiro: 7, proposito: 5, escalabilidade: 2, tempoRetorno: 9, complexidade: 8, automacao: 2, sinergia: 4, potencialIA: 3 }),
-      createdAt: '2026-07-05',
+      id: 'p-cons', title: 'Consultoria 1:1', status: 'backlog',
+      description: 'Alto valor por hora, valida a oferta, mas não escala.',
+      scores: mk({ impactoFinanceiro: 7, proposito: 6, escalabilidade: 3, tempoRetorno: 8, complexidade: 7, automacao: 3, sinergia: 6, potencialIA: 4 }),
+      createdAt: todayISO(),
     },
   ]
 
   const ideas: Idea[] = [
-    { id: 'i1', title: 'App de finanças com IA', notes: 'Modelo de assinatura recorrente, automatizável, forte potencial de IA e escala.', status: 'novo', createdAt: todayISO() },
-    { id: 'i2', title: 'Newsletter paga', notes: 'Talvez um dia. Renda passiva com comunidade.', status: 'novo', createdAt: todayISO() },
+    { id: 'i1', title: 'Newsletter paga sobre meu nicho', notes: 'Assinatura recorrente, escalável, forte potencial de IA.', status: 'novo', createdAt: todayISO() },
+    { id: 'i2', title: 'Curso gravado', notes: 'Produto digital, renda passiva depois de pronto.', status: 'novo', createdAt: todayISO() },
   ]
 
-  // Últimos 7 dias de Life Score (trajetória de exemplo).
   const logs: DayLog[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
@@ -162,16 +261,16 @@ function seed() {
     const iso = d.toISOString().slice(0, 10)
     const base: DailyMetrics = {
       ...emptyMetrics(),
-      sono: 6 + ((i * 3) % 4), treino: i % 2 === 0 ? 7 : 0, peso: 86 - (6 - i) * 0.2,
-      agua: 2 + (i % 3) * 0.5, alimentacao: 6 + (i % 3), foco: 5 + (i % 4),
-      deepWork: (i % 3) + 1, receita: i % 2 === 0 ? 1200 : 0, investimentos: i === 3 ? 3000 : 0,
-      familia: (i % 3), leitura: 5 + (i % 4), aprendizado: 5 + (i % 3),
-      meditacao: (i % 2) * 15, gratidao: 6 + (i % 3), humor: 6 + (i % 3), energia: 5 + (i % 4),
+      sono: 6 + (i % 3), treino: i % 2 === 0 ? 7 : 0, agua: 2 + (i % 3) * 0.5,
+      alimentacao: 6 + (i % 3), foco: 5 + (i % 4), deepWork: (i % 3) + 1,
+      receita: i % 2 === 0 ? 300 : 0, familia: i % 3, leitura: 5 + (i % 4),
+      aprendizado: 5 + (i % 3), meditacao: (i % 2) * 10, gratidao: 6 + (i % 3),
+      humor: 6 + (i % 3), energia: 5 + (i % 4),
     }
     logs.push({ date: iso, metrics: base, score: computeLifeScore(base) })
   }
 
-  return { goals, metas, tasks, projects, ideas, logs }
+  return { goals, habits, habitLog, metas, tasks, projects, ideas, logs }
 }
 
 const s = seed()
@@ -188,6 +287,20 @@ export const useStore = create<State>()(
       addGoal: (g) => set((st) => ({ goals: [...st.goals, { ...g, id: uid(), createdAt: todayISO() }] })),
       updateGoal: (id, patch) => set((st) => ({ goals: st.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) })),
       removeGoal: (id) => set((st) => ({ goals: st.goals.filter((g) => g.id !== id) })),
+      addGoalStep: (goalId, title) =>
+        set((st) => ({
+          goals: st.goals.map((g) => (g.id === goalId ? { ...g, steps: [...g.steps, step(title)] } : g)),
+        })),
+      toggleGoalStep: (goalId, stepId) =>
+        set((st) => ({
+          goals: st.goals.map((g) =>
+            g.id === goalId ? { ...g, steps: g.steps.map((x) => (x.id === stepId ? { ...x, done: !x.done } : x)) } : g,
+          ),
+        })),
+      removeGoalStep: (goalId, stepId) =>
+        set((st) => ({
+          goals: st.goals.map((g) => (g.id === goalId ? { ...g, steps: g.steps.filter((x) => x.id !== stepId) } : g)),
+        })),
 
       addMeta: (m) => set((st) => ({ metas: [...st.metas, { ...m, id: uid(), done: false, createdAt: todayISO() }] })),
       toggleMeta: (id) => set((st) => ({ metas: st.metas.map((m) => (m.id === id ? { ...m, done: !m.done } : m)) })),
@@ -207,12 +320,21 @@ export const useStore = create<State>()(
         }),
       removeTask: (id) => set((st) => ({ tasks: st.tasks.filter((t) => t.id !== id) })),
 
+      addHabit: (h) => set((st) => ({ habits: [...st.habits, { ...h, id: uid(), active: true, createdAt: todayISO() }] })),
+      updateHabit: (id, patch) => set((st) => ({ habits: st.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)) })),
+      removeHabit: (id) => set((st) => ({ habits: st.habits.filter((h) => h.id !== id) })),
+      toggleHabit: (date, id) =>
+        set((st) => {
+          const cur = st.habitLog[date] ?? []
+          const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+          return { habitLog: { ...st.habitLog, [date]: next } }
+        }),
+
       addProject: (p) => set((st) => ({ projects: [...st.projects, { ...p, id: uid(), createdAt: todayISO() }] })),
       updateProject: (id, patch) => set((st) => ({ projects: st.projects.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       setProjectScores: (id, scores) => set((st) => ({ projects: st.projects.map((p) => (p.id === id ? { ...p, scores } : p)) })),
       setInExecution: (id) =>
         set((st) => ({
-          // Regra do Projeto Único: qualquer outro em execução volta para incubação.
           projects: st.projects.map((p) =>
             p.id === id
               ? { ...p, status: 'execucao' as const }
@@ -238,20 +360,16 @@ export const useStore = create<State>()(
         }),
 
       saveDailyReview: (r) =>
-        set((st) => ({
-          dailyReviews: [r, ...st.dailyReviews.filter((x) => x.date !== r.date)],
-        })),
+        set((st) => ({ dailyReviews: [r, ...st.dailyReviews.filter((x) => x.date !== r.date)] })),
       saveWeeklyReview: (r) =>
-        set((st) => ({
-          weeklyReviews: [r, ...st.weeklyReviews.filter((x) => x.weekStart !== r.weekStart)],
-        })),
+        set((st) => ({ weeklyReviews: [r, ...st.weeklyReviews.filter((x) => x.weekStart !== r.weekStart)] })),
 
       pushChat: (m) => set((st) => ({ chat: [...st.chat, { ...m, id: uid(), createdAt: new Date().toISOString() }] })),
       clearChat: () => set({ chat: [] }),
 
       setAi: (patch) => set((st) => ({ ai: { ...st.ai, ...patch } })),
-      resetAll: () => set({ ...s, dailyReviews: [], weeklyReviews: [], chat: [], ai: { provider: 'local' } }),
+      resetAll: () => set({ ...seed(), dailyReviews: [], weeklyReviews: [], chat: [], ai: { provider: 'local' } }),
     }),
-    { name: 'lifeos-ai-v1' },
+    { name: 'lifeos-ai-v2' },
   ),
 )
