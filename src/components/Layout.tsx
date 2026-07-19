@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Map, Zap, TrendingUp, CheckCircle2, Bot, Command } from 'lucide-react'
+import { Map, Zap, TrendingUp, CheckCircle2, Bot, Command, Wallet, StickyNote } from 'lucide-react'
 import { clsx } from 'clsx'
 
 // O ciclo do LifeOS (PDCA): Plan → Action → Progress → Check → volta ao Plan.
@@ -8,6 +8,11 @@ const loop = [
   { to: '/', label: 'Action', sub: 'Executar hoje', icon: Zap, end: true },
   { to: '/progress', label: 'Progress', sub: 'Medir', icon: TrendingUp },
   { to: '/check', label: 'Check', sub: 'Avaliar', icon: CheckCircle2 },
+]
+
+const tools = [
+  { to: '/financas', label: 'Finanças', icon: Wallet },
+  { to: '/notas', label: 'Notas', icon: StickyNote },
 ]
 
 export default function Layout() {
@@ -31,6 +36,13 @@ export default function Layout() {
           ))}
         </nav>
 
+        <p className="mb-2 mt-6 px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-600">Ferramentas</p>
+        <nav className="flex flex-col gap-1">
+          {tools.map((n) => (
+            <SimpleNavItem key={n.to} {...n} />
+          ))}
+        </nav>
+
         <div className="mt-6">
           <NavLink
             to="/stark"
@@ -48,7 +60,7 @@ export default function Layout() {
             </div>
             <div>
               <p className="text-sm font-bold leading-tight text-white">STARK</p>
-              <p className="text-[10px] text-ink-400">Seu conselheiro pessoal</p>
+              <p className="text-[10px] text-ink-400">Seu conselheiro pessoal · Jarvis</p>
             </div>
           </NavLink>
         </div>
@@ -106,6 +118,23 @@ function NavItem({ to, label, sub, icon: Icon, end, index }: Item) {
           <Icon size={16} className={clsx(isActive ? 'text-accent-soft' : 'text-ink-600')} />
         </>
       )}
+    </NavLink>
+  )
+}
+
+function SimpleNavItem({ to, label, icon: Icon }: Item) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        clsx(
+          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+          isActive ? 'bg-white/[0.06] text-white' : 'text-ink-400 hover:bg-white/[0.03] hover:text-ink-100',
+        )
+      }
+    >
+      <Icon size={18} />
+      {label}
     </NavLink>
   )
 }

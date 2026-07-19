@@ -5,14 +5,17 @@ import type {
   DailyMetrics,
   DailyReview,
   DayLog,
+  FinanceEntry,
   Goal,
   Habit,
   HabitLog,
   Idea,
   Meta,
+  Note,
   Project,
   ProjectScores,
   Task,
+  TaskStatus,
   WeeklyReview,
 } from './types'
 import { emptyMetrics } from './types'
@@ -29,6 +32,8 @@ interface State {
   logs: DayLog[]
   habits: Habit[]
   habitLog: HabitLog
+  notes: Note[]
+  finances: FinanceEntry[]
   dailyReviews: DailyReview[]
   weeklyReviews: WeeklyReview[]
   chat: ChatMessage[]
@@ -48,10 +53,19 @@ interface State {
   removeMeta: (id: string) => void
 
   // Tasks
-  addTask: (t: Omit<Task, 'id' | 'createdAt' | 'done'>) => void
+  addTask: (t: Omit<Task, 'id' | 'createdAt' | 'done' | 'status'> & { status?: TaskStatus }) => void
   toggleTask: (id: string) => void
+  moveTask: (id: string, status: TaskStatus) => void
   setOneThing: (id: string) => void
   removeTask: (id: string) => void
+
+  // Notas
+  addNote: (n: Omit<Note, 'id' | 'createdAt'>) => void
+  removeNote: (id: string) => void
+
+  // Finanças
+  addFinance: (f: Omit<FinanceEntry, 'id' | 'createdAt'>) => void
+  removeFinance: (id: string) => void
 
   // Habits
   addHabit: (h: Omit<Habit, 'id' | 'createdAt' | 'active'>) => void
@@ -219,8 +233,17 @@ function seed() {
   ]
 
   const tasks: Task[] = [
-    { id: 't1', title: 'Definir minha oferta principal em 1 frase', metaId: 'm-s1', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
+    { id: 't1', title: 'Definir minha oferta principal em 1 frase', metaId: 'm-s1', status: 'hoje', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
+    { id: 't2', title: 'Listar meus projetos em aberto', metaId: 'm-s1', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't3', title: 'Escolher o próximo livro para ler', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't4', title: 'Agendar 4 treinos na semana', metaId: 'm-s2', status: 'fazendo', done: false, date: todayISO(), createdAt: todayISO() },
   ]
+
+  const notes: Note[] = [
+    { id: 'n1', text: 'Menos, porém melhor. Um projeto de cada vez.', kind: 'frase', createdAt: todayISO() },
+  ]
+
+  const finances: FinanceEntry[] = []
 
   const mk = (s: Partial<ProjectScores>): ProjectScores => ({
     impactoFinanceiro: 5, proposito: 5, escalabilidade: 5, tempoRetorno: 5,
@@ -270,7 +293,7 @@ function seed() {
     logs.push({ date: iso, metrics: base, score: computeLifeScore(base) })
   }
 
-  return { goals, habits, habitLog, metas, tasks, projects, ideas, logs }
+  return { goals, habits, habitLog, metas, tasks, notes, finances, projects, ideas, logs }
 }
 
 const s = seed()
@@ -306,8 +329,20 @@ export const useStore = create<State>()(
       toggleMeta: (id) => set((st) => ({ metas: st.metas.map((m) => (m.id === id ? { ...m, done: !m.done } : m)) })),
       removeMeta: (id) => set((st) => ({ metas: st.metas.filter((m) => m.id !== id) })),
 
-      addTask: (t) => set((st) => ({ tasks: [...st.tasks, { ...t, id: uid(), done: false, createdAt: todayISO() }] })),
-      toggleTask: (id) => set((st) => ({ tasks: st.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) })),
+      addTask: (t) =>
+        set((st) => ({ tasks: [...st.tasks, { status: 'hoje', ...t, id: uid(), done: false, createdAt: todayISO() }] })),
+      toggleTask: (id) =>
+        set((st) => ({
+          tasks: st.tasks.map((t) => {
+            if (t.id !== id) return t
+            const done = !t.done
+            return { ...t, done, status: done ? 'feito' : t.status === 'feito' ? 'hoje' : t.status }
+          }),
+        })),
+      moveTask: (id, status) =>
+        set((st) => ({
+          tasks: st.tasks.map((t) => (t.id === id ? { ...t, status, done: status === 'feito' } : t)),
+        })),
       setOneThing: (id) =>
         set((st) => {
           const target = st.tasks.find((t) => t.id === id)
@@ -319,6 +354,12 @@ export const useStore = create<State>()(
           }
         }),
       removeTask: (id) => set((st) => ({ tasks: st.tasks.filter((t) => t.id !== id) })),
+
+      addNote: (n) => set((st) => ({ notes: [{ ...n, id: uid(), createdAt: new Date().toISOString() }, ...st.notes] })),
+      removeNote: (id) => set((st) => ({ notes: st.notes.filter((n) => n.id !== id) })),
+
+      addFinance: (f) => set((st) => ({ finances: [{ ...f, id: uid(), createdAt: new Date().toISOString() }, ...st.finances] })),
+      removeFinance: (id) => set((st) => ({ finances: st.finances.filter((f) => f.id !== id) })),
 
       addHabit: (h) => set((st) => ({ habits: [...st.habits, { ...h, id: uid(), active: true, createdAt: todayISO() }] })),
       updateHabit: (id, patch) => set((st) => ({ habits: st.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)) })),
@@ -370,6 +411,6 @@ export const useStore = create<State>()(
       setAi: (patch) => set((st) => ({ ai: { ...st.ai, ...patch } })),
       resetAll: () => set({ ...seed(), dailyReviews: [], weeklyReviews: [], chat: [], ai: { provider: 'local' } }),
     }),
-    { name: 'lifeos-ai-v2' },
+    { name: 'lifeos-ai-v3' },
   ),
 )

@@ -11,10 +11,27 @@ import type { MentorContext } from './mentor'
 
 export type AiProvider = 'local' | 'claude' | 'openai' | 'gemini'
 
+export type IntegrationKey =
+  | 'calendar'
+  | 'health'
+  | 'whatsapp'
+  | 'email'
+  | 'notion'
+  | 'drive'
+  | 'bank'
+
 export interface AiSettings {
   provider: AiProvider
   /** Endpoint da sua função serverless (ex.: /api/mentor). Nunca a chave crua. */
   endpoint?: string
+  /** Modo Jarvis (voz em tempo real via LiveKit). */
+  voiceEnabled?: boolean
+  /** URL do seu servidor LiveKit (wss://...). O token vem do backend, nunca aqui. */
+  livekitUrl?: string
+  /** Endpoint do seu backend que emite tokens de acesso LiveKit. */
+  livekitTokenEndpoint?: string
+  /** Integrações que o STARK pode ler para "saber de tudo". */
+  integrations?: Partial<Record<IntegrationKey, boolean>>
 }
 
 /**

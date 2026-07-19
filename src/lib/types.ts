@@ -83,18 +83,48 @@ export interface Meta {
   createdAt: string
 }
 
+export type TaskStatus = 'backlog' | 'hoje' | 'fazendo' | 'feito'
+
+export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
+  { key: 'backlog', label: 'A fazer' },
+  { key: 'hoje', label: 'Hoje' },
+  { key: 'fazendo', label: 'Fazendo' },
+  { key: 'feito', label: 'Feito' },
+]
+
 /**
- * Tarefa. REGRA CENTRAL: toda tarefa DEVE estar ligada a uma meta (metaId).
- * O usuário nunca cria tarefas soltas — o sistema recusa o desperdício.
+ * Tarefa. Vinculada a uma meta (metaId) quando possível — mas capturar rápido
+ * importa mais que preencher tudo. O Kanban a move entre colunas.
  */
 export interface Task {
   id: string
   title: string
-  metaId: string // obrigatório por design
+  metaId?: string
+  status: TaskStatus
   done: boolean
   /** Marcada como a "One Thing" do dia (a tarefa 80/20). */
   isOneThing?: boolean
   date: string // ISO date (dia planejado)
+  createdAt: string
+}
+
+/** Pensamento, frase ou nota rápida. Captura em 1 toque; STARK pode usar. */
+export interface Note {
+  id: string
+  text: string
+  kind: 'pensamento' | 'frase' | 'ideia'
+  createdAt: string
+}
+
+/** Lançamento financeiro simples — alimenta a meta de renda. */
+export interface FinanceEntry {
+  id: string
+  type: 'receita' | 'despesa'
+  amount: number
+  label: string
+  /** Se true, conta como renda/gasto recorrente mensal. */
+  recurring: boolean
+  date: string
   createdAt: string
 }
 
