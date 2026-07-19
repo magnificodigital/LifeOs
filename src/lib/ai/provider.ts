@@ -10,7 +10,8 @@
 // app roda na sua máquina). Para um produto multiusuário, mova as chamadas
 // para um backend (ex.: Supabase Edge Function).
 // ============================================================================
-import type { MentorContext } from './mentor'
+import { recurringIncome, type MentorContext } from './mentor'
+import { computeStreak } from '../game'
 
 export type LlmProviderKey = 'openai' | 'gemini' | 'claude' | 'deepseek' | 'kimi'
 
@@ -105,6 +106,16 @@ export function buildSystemPrompt(ctx: MentorContext): string {
         tarefasAbertas: ctx.tasks.filter((t) => !t.done).length,
         ideiasNovas: ctx.ideas.filter((i) => i.status === 'novo').length,
         ultimoLifeScore: [...ctx.logs].sort((a, b) => b.date.localeCompare(a.date))[0]?.score ?? null,
+        ofensivaDias: ctx.habitLog ? computeStreak(ctx.habitLog, ctx.today) : 0,
+        habitosHoje: {
+          feitos: ctx.habitLog?.[ctx.today]?.length ?? 0,
+          total: (ctx.habits ?? []).filter((h) => h.active).length,
+        },
+        rendaMensalRecorrente: recurringIncome(ctx),
+        lancamentosFinanceiros: (ctx.finances ?? []).slice(0, 15).map((f) => ({
+          tipo: f.type, valor: f.amount, descricao: f.label, recorrente: f.recurring,
+        })),
+        notasRecentes: (ctx.notes ?? []).slice(0, 10).map((n) => ({ tipo: n.kind, texto: n.text })),
       },
       null,
       2,

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Sparkles, ArrowRight, CheckCircle2, Circle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useStore } from '@/lib/store'
-import { computeCheck } from '@/lib/check'
+import { computeCheck, suggestPlanAdjustments } from '@/lib/check'
 import { Card, Fade, PageHeader, ProgressBar, ScoreRing } from '@/components/ui'
 import { scoreColor } from '@/lib/scoring'
 import { todayISO } from '@/lib/utils'
@@ -32,6 +32,19 @@ export default function Check() {
 
   const periodTasks = store.tasks.filter(
     (t) => t.status !== 'backlog' && (period === 'hoje' ? t.date === today : true),
+  )
+
+  const adjustments = useMemo(
+    () =>
+      suggestPlanAdjustments(result, {
+        goals: store.goals,
+        metas: store.metas,
+        habits: store.habits,
+        habitLog: store.habitLog,
+        tasks: store.tasks,
+        today,
+      }),
+    [result, store.goals, store.metas, store.habits, store.habitLog, store.tasks, today],
   )
 
   return (
@@ -104,6 +117,27 @@ export default function Check() {
           </Card>
         </Fade>
       </div>
+
+      {/* STARK fecha o ciclo: ajustes para o próximo Plan */}
+      <Fade delay={0.07}>
+        <Card className="mt-4 border-accent/20 bg-gradient-to-br from-accent/[0.08] to-transparent">
+          <div className="mb-3 flex items-center gap-2">
+            <Sparkles size={15} className="text-accent-soft" />
+            <p className="section-title !text-accent-soft">STARK sugere para o próximo Plan</p>
+          </div>
+          <div className="space-y-2">
+            {adjustments.map((a, i) => (
+              <div key={i} className="flex items-start gap-2.5 rounded-xl bg-white/[0.03] p-3 text-sm text-ink-200">
+                <span className="text-base">{a.emoji}</span>
+                <span className="leading-snug">{a.text}</span>
+              </div>
+            ))}
+          </div>
+          <Link to="/plan" className="btn-ghost mt-3 !px-0 text-accent-soft">
+            Aplicar no Plan <ArrowRight size={15} />
+          </Link>
+        </Card>
+      </Fade>
 
       {/* Detalhe das tarefas do período */}
       <Fade delay={0.08}>

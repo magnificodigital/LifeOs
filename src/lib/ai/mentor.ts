@@ -12,13 +12,18 @@
 // ============================================================================
 import type {
   DayLog,
+  FinanceEntry,
   Goal,
+  Habit,
+  HabitLog,
   Idea,
   Meta,
+  Note,
   Project,
   Task,
 } from '../types'
 import { computeProjectPriority, rankProjects } from '../scoring'
+import { computeStreak } from '../game'
 
 export interface MentorContext {
   goals: Goal[]
@@ -27,7 +32,19 @@ export interface MentorContext {
   projects: Project[]
   ideas: Idea[]
   logs: DayLog[]
+  /** O STARK sabe tudo: hábitos, ofensiva, dinheiro e notas. */
+  habits?: Habit[]
+  habitLog?: HabitLog
+  finances?: FinanceEntry[]
+  notes?: Note[]
   today: string // ISO date
+}
+
+/** Renda mensal recorrente registrada em Finanças. */
+export function recurringIncome(ctx: MentorContext): number {
+  return (ctx.finances ?? [])
+    .filter((f) => f.type === 'receita' && f.recurring)
+    .reduce((s, f) => s + f.amount, 0)
 }
 
 export interface CeoBriefing {
@@ -191,9 +208,26 @@ export function answer(question: string, ctx: MentorContext): string {
   }
   if (match('dinheiro', 'ganhar mais', 'renda', 'receita', 'faturar')) {
     const best = ranked[0]
+    const income = recurringIncome(ctx)
+    const rendaGoal = ctx.goals.find((g) => g.unit === 'R$/mês')
+    const gap = rendaGoal?.target ? Math.max(0, rendaGoal.target - income) : null
+    const status =
+      gap !== null
+        ? income > 0
+          ? `Hoje você tem ${brl(income)}/mês recorrentes — faltam ${brl(gap)} para a meta. `
+          : `Sua renda recorrente registrada ainda é R$ 0 — a meta é ${brl(rendaGoal!.target!)}/mês. `
+        : ''
     return best
-      ? `Concentre energia em "${best.title}" — é seu projeto de maior prioridade (${computeProjectPriority(best.scores)}/100), com o melhor equilíbrio entre impacto financeiro, escala e automação. Dinheiro segue foco, não esforço espalhado.`
-      : `Cadastre seus projetos com notas de impacto/escala/automação. Eu ranqueio e aponto onde seu próximo real deve vir.`
+      ? `${status}Concentre energia em "${best.title}" — é seu projeto de maior prioridade (${computeProjectPriority(best.scores)}/100), com o melhor equilíbrio entre impacto financeiro, escala e automação. Dinheiro segue foco, não esforço espalhado.`
+      : `${status}Cadastre seus projetos com notas de impacto/escala/automação. Eu ranqueio e aponto onde seu próximo real deve vir.`
+  }
+  if (match('hábito', 'habito', 'ofensiva', 'streak', 'sequência')) {
+    const streak = ctx.habitLog ? computeStreak(ctx.habitLog, ctx.today) : 0
+    const doneToday = ctx.habitLog?.[ctx.today]?.length ?? 0
+    const total = (ctx.habits ?? []).filter((h) => h.active).length
+    return streak > 0
+      ? `Sua ofensiva está em **${streak} dia(s)** 🔥 e hoje você completou ${doneToday} de ${total} missões. ${doneToday < total ? 'Não quebre a corrente: feche pelo menos mais uma antes de dormir.' : 'Dia completo — é assim que 1% ao dia compõe uma vida.'}`
+      : `Ofensiva zerada. Sem drama — recomece hoje com a missão mais fácil da lista (a de menor esforço). O objetivo do dia 1 é só não quebrar de novo amanhã.`
   }
   if (match('delegar', 'terceirizar', 'contratar')) {
     const cand = ctx.tasks.find((t) => !t.done && !t.isOneThing)

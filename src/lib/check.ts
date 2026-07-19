@@ -102,3 +102,76 @@ export function computeCheck(period: 'hoje' | 'semana', input: CheckInput): Chec
 
   return { period, areas, totalPlanned, totalDone, pct, read }
 }
+
+// ---------------------------------------------------------------------------
+// Fechamento do ciclo: Check → ajustes concretos para o próximo Plan.
+// (Dalio: dor + reflexão = progresso. Aqui a reflexão vira ação.)
+// ---------------------------------------------------------------------------
+export interface PlanAdjustment {
+  emoji: string
+  text: string
+}
+
+export function suggestPlanAdjustments(result: CheckResult, input: CheckInput): PlanAdjustment[] {
+  const out: PlanAdjustment[] = []
+  const weakest = [...result.areas].sort((a, b) => a.pct - b.pct)[0]
+  const strongest = [...result.areas].sort((a, b) => b.pct - a.pct)[0]
+
+  if (result.totalPlanned === 0) {
+    return [{ emoji: '🗺️', text: 'Nada planejado neste período. Comece pequeno: 3 hábitos e 1 tarefa por dia já geram sinal para eu avaliar.' }]
+  }
+
+  // Área mais fraca → ajuste direto.
+  if (weakest && weakest.pct < 60) {
+    const habitsInArea = input.habits.filter((h) => h.active && h.area === weakest.area)
+    if (habitsInArea.length > 1) {
+      out.push({
+        emoji: weakest.emoji,
+        text: `${weakest.label} travou (${weakest.pct}%). Reduza para UM hábito dessa área até estabilizar — consistência antes de volume.`,
+      })
+    } else {
+      out.push({
+        emoji: weakest.emoji,
+        text: `${weakest.label} ficou em ${weakest.pct}%. Troque o horário ou reduza a dificuldade do hábito (ex.: 10 min em vez de 1h) — o sistema deve caber no seu pior dia.`,
+      })
+    }
+  }
+
+  // Excesso de planejamento generalizado.
+  if (result.pct < 50 && result.totalPlanned >= 8) {
+    out.push({
+      emoji: '✂️',
+      text: `Você planejou ${result.totalPlanned} itens e concluiu ${result.totalDone}. O plano está maior que o dia. Corte 30% — menos, porém melhor.`,
+    })
+  }
+
+  // Tarefas paradas em "fazendo".
+  const stuck = input.tasks.filter((t) => t.status === 'fazendo').length
+  if (stuck >= 3) {
+    out.push({
+      emoji: '🚧',
+      text: `${stuck} tarefas estão paradas em "Fazendo". Trabalho em progresso demais é fila disfarçada — termine uma antes de puxar outra.`,
+    })
+  }
+
+  // Reforço do que funciona.
+  if (strongest && strongest.pct >= 80 && strongest !== weakest) {
+    out.push({
+      emoji: strongest.emoji,
+      text: `${strongest.label} está forte (${strongest.pct}%). O que essa rotina tem que as outras não têm? Copie o formato (mesmo horário/gatilho) para a área mais fraca.`,
+    })
+  }
+
+  // Execução forte → subir a régua.
+  if (result.pct >= 85) {
+    out.push({
+      emoji: '📈',
+      text: 'Execução acima de 85%. Hora de subir a régua: aumente a dificuldade de UM hábito ou adicione o próximo passo do seu objetivo prioritário ao Kanban.',
+    })
+  }
+
+  if (out.length === 0) {
+    out.push({ emoji: '✅', text: 'Ritmo saudável — nenhum ajuste estrutural necessário. Mantenha o sistema rodando e reavalie na próxima semana.' })
+  }
+  return out
+}

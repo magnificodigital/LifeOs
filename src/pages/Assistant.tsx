@@ -27,6 +27,10 @@ export default function Assistant() {
     projects: store.projects,
     ideas: store.ideas,
     logs: store.logs,
+    habits: store.habits,
+    habitLog: store.habitLog,
+    finances: store.finances,
+    notes: store.notes,
     today: todayISO(),
   }
   const [input, setInput] = useState('')
