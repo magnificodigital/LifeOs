@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Map, Zap, TrendingUp, CheckCircle2, Bot, Command, Wallet, StickyNote } from 'lucide-react'
+import { Map, Zap, TrendingUp, CheckCircle2, Bot, Command, Wallet, StickyNote, Plug } from 'lucide-react'
 import { clsx } from 'clsx'
 
 // O ciclo do LifeOS (PDCA): Plan → Action → Progress → Check → volta ao Plan.
@@ -13,6 +13,7 @@ const loop = [
 const tools = [
   { to: '/financas', label: 'Finanças', icon: Wallet },
   { to: '/notas', label: 'Notas', icon: StickyNote },
+  { to: '/conexoes', label: 'Conexões', icon: Plug },
 ]
 
 export default function Layout() {
@@ -60,7 +61,7 @@ export default function Layout() {
             </div>
             <div>
               <p className="text-sm font-bold leading-tight text-white">STARK</p>
-              <p className="text-[10px] text-ink-400">Seu conselheiro pessoal · Jarvis</p>
+              <p className="text-[10px] text-ink-400">Seu conselheiro pessoal</p>
             </div>
           </NavLink>
         </div>

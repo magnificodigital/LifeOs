@@ -46,7 +46,11 @@ export default function Assistant() {
     setThinking(true)
     // Tenta o LLM configurado; cai para o motor local determinístico.
     const remote = await chatWithLLM(q, ctx, ai)
-    const reply = remote ?? answer(q, ctx)
+    const reply =
+      remote.text ??
+      (remote.error
+        ? `⚠️ Falha ao chamar o modelo (${remote.error}). Respondendo com o motor local:\n\n${answer(q, ctx)}`
+        : answer(q, ctx))
     setThinking(false)
     pushChat({ role: 'assistant', content: reply })
   }
@@ -70,7 +74,7 @@ export default function Assistant() {
                 <div>
                   <p className="text-sm font-semibold text-white">STARK</p>
                   <p className="text-[10px] text-ink-500">
-                    {ai.provider === 'local' ? 'Conselheiro estratégico' : `Conectado: ${ai.provider}`}
+                    {ai.activeProvider === 'local' ? 'Conselheiro estratégico (local)' : `Conectado: ${ai.activeProvider}`}
                   </p>
                 </div>
               </div>

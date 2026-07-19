@@ -7,6 +7,7 @@ import Check from '@/pages/Check'
 import Stark from '@/pages/Stark'
 import Finances from '@/pages/Finances'
 import Notes from '@/pages/Notes'
+import Connections from '@/pages/Connections'
 import Dashboard from '@/pages/Dashboard'
 import LifeScore from '@/pages/LifeScore'
 import Metas from '@/pages/Metas'
@@ -25,6 +26,7 @@ const router = createHashRouter([
       { path: 'stark', element: <Stark /> },
       { path: 'financas', element: <Finances /> },
       { path: 'notas', element: <Notes /> },
+      { path: 'conexoes', element: <Connections /> },
       // Secundárias
       { path: 'painel', element: <Dashboard /> },
       { path: 'lifescore', element: <LifeScore /> },

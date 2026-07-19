@@ -21,7 +21,9 @@ import type {
 import { emptyMetrics } from './types'
 import { computeLifeScore } from './scoring'
 import { uid, todayISO } from './utils'
-import type { AiSettings } from './ai/provider'
+import { defaultAiSettings, type AiSettings, type LlmProviderKey, type LlmConfig } from './ai/provider'
+import type { IntegrationKey, IntegrationsSettings, IntegrationState } from './integrations'
+import type { SupabaseSettings } from './supabase'
 
 interface State {
   goals: Goal[]
@@ -38,6 +40,8 @@ interface State {
   weeklyReviews: WeeklyReview[]
   chat: ChatMessage[]
   ai: AiSettings
+  integrations: IntegrationsSettings
+  supabase: SupabaseSettings
 
   // Goals
   addGoal: (g: Omit<Goal, 'id' | 'createdAt'>) => void
@@ -96,7 +100,12 @@ interface State {
   pushChat: (m: Omit<ChatMessage, 'id' | 'createdAt'>) => void
   clearChat: () => void
 
-  setAi: (patch: Partial<AiSettings>) => void
+  setActiveProvider: (p: AiSettings['activeProvider']) => void
+  setProviderConfig: (p: LlmProviderKey, patch: Partial<LlmConfig>) => void
+  setIntegration: (k: IntegrationKey, patch: Partial<IntegrationState>) => void
+  setSupabase: (patch: Partial<SupabaseSettings>) => void
+  /** Substitui o estado inteiro (restore da nuvem). */
+  importState: (data: Record<string, unknown>) => void
   resetAll: () => void
 }
 
@@ -305,7 +314,9 @@ export const useStore = create<State>()(
       dailyReviews: [],
       weeklyReviews: [],
       chat: [],
-      ai: { provider: 'local' },
+      ai: defaultAiSettings(),
+      integrations: {},
+      supabase: {},
 
       addGoal: (g) => set((st) => ({ goals: [...st.goals, { ...g, id: uid(), createdAt: todayISO() }] })),
       updateGoal: (id, patch) => set((st) => ({ goals: st.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) })),
@@ -408,9 +419,23 @@ export const useStore = create<State>()(
       pushChat: (m) => set((st) => ({ chat: [...st.chat, { ...m, id: uid(), createdAt: new Date().toISOString() }] })),
       clearChat: () => set({ chat: [] }),
 
-      setAi: (patch) => set((st) => ({ ai: { ...st.ai, ...patch } })),
-      resetAll: () => set({ ...seed(), dailyReviews: [], weeklyReviews: [], chat: [], ai: { provider: 'local' } }),
+      setActiveProvider: (p) => set((st) => ({ ai: { ...st.ai, activeProvider: p } })),
+      setProviderConfig: (p, patch) =>
+        set((st) => ({
+          ai: { ...st.ai, providers: { ...st.ai.providers, [p]: { ...st.ai.providers[p], ...patch } } },
+        })),
+      setIntegration: (k, patch) =>
+        set((st) => ({
+          integrations: {
+            ...st.integrations,
+            [k]: { enabled: false, values: {}, ...st.integrations[k], ...patch },
+          },
+        })),
+      setSupabase: (patch) => set((st) => ({ supabase: { ...st.supabase, ...patch } })),
+      importState: (data) => set(data as any),
+      resetAll: () =>
+        set({ ...seed(), dailyReviews: [], weeklyReviews: [], chat: [], ai: defaultAiSettings(), integrations: {}, supabase: {} }),
     }),
-    { name: 'lifeos-ai-v3' },
+    { name: 'lifeos-ai-v4' },
   ),
 )
