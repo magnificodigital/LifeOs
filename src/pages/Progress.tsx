@@ -36,7 +36,8 @@ export default function Progress() {
 
   return (
     <div>
-      <PageHeader title="Progresso" subtitle="Sua evolução em números — nível, ofensiva, conquistas e trajetória." />
+      <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Progress · Medir</p>
+      <PageHeader title="Progresso" subtitle="Sua evolução em números — nível, ofensiva, conquistas e trajetória. Os fatos; a reflexão fica no Check." />
 
       {/* Perfil de jogo */}
       <Fade>

@@ -54,8 +54,8 @@ export default function Assistant() {
   return (
     <div>
       <PageHeader
-        title="Assistente IA"
-        subtitle="Seu conselheiro executivo. Ele lê toda a sua vida e responde como um CEO faria — nunca um chatbot genérico."
+        title="STARK"
+        subtitle="Seu conselheiro pessoal. Ele lê toda a sua vida e responde como um CEO faria — nunca um chatbot genérico."
       />
 
       <div className="grid gap-4 lg:grid-cols-[1fr,300px]">
@@ -68,9 +68,9 @@ export default function Assistant() {
                   <Bot size={15} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Mentor LifeOS</p>
+                  <p className="text-sm font-semibold text-white">STARK</p>
                   <p className="text-[10px] text-ink-500">
-                    {ai.provider === 'local' ? 'Motor estratégico local' : `Conectado: ${ai.provider}`}
+                    {ai.provider === 'local' ? 'Conselheiro estratégico' : `Conectado: ${ai.provider}`}
                   </p>
                 </div>
               </div>

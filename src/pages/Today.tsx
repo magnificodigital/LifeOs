@@ -37,6 +37,7 @@ export default function Today() {
     <div>
       {/* Cabeçalho + nível */}
       <Fade>
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Action · Executar hoje</p>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">{greeting} 👋</h1>
@@ -186,7 +187,7 @@ export default function Today() {
                 </span>
               </div>
             )}
-            <Link to="/objetivos" className="btn-ghost mt-2 !px-0 text-accent-soft">
+            <Link to="/plan" className="btn-ghost mt-2 !px-0 text-accent-soft">
               Ver plano completo <ArrowRight size={15} />
             </Link>
           </Card>

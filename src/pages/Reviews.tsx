@@ -13,9 +13,10 @@ export default function Reviews() {
   const [tab, setTab] = useState<Tab>('diaria')
   return (
     <div>
+      <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Check · Avaliar</p>
       <PageHeader
         title="Revisões"
-        subtitle="O que fiz? O que me aproximou? O que me afastou? Refletir é como o sistema aprende."
+        subtitle="Aqui você reflete (o Progress mostra os números; o Check é onde você pensa). O que aprendeu vira ajuste no seu próximo Plan."
       />
       <div className="mb-5 inline-flex rounded-xl border border-white/10 p-1">
         {(

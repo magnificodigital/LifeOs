@@ -137,8 +137,8 @@ export default function Dashboard() {
               <Flame size={16} className="mt-0.5 shrink-0 text-amber-300" />
               <p className="text-sm text-amber-100/90">{briefing.challenge}</p>
             </div>
-            <Link to="/assistente" className="btn-ghost mt-3 !px-0 text-accent-soft">
-              Conversar com o mentor <ArrowRight size={15} />
+            <Link to="/stark" className="btn-ghost mt-3 !px-0 text-accent-soft">
+              Falar com STARK <ArrowRight size={15} />
             </Link>
           </Card>
         </Fade>
@@ -157,7 +157,7 @@ export default function Dashboard() {
               ) : (
                 <p className="text-sm text-ink-400">
                   Nenhum projeto em execução.{' '}
-                  <Link to="/projetos" className="text-accent-soft">
+                  <Link to="/plan" className="text-accent-soft">
                     Defina seu foco →
                   </Link>
                 </p>

@@ -1,37 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import {
-  Sun,
-  Target,
-  Trophy,
-  Bot,
-  LayoutDashboard,
-  FolderKanban,
-  Lightbulb,
-  ListTree,
-  HeartPulse,
-  ClipboardCheck,
-  Command,
-} from 'lucide-react'
+import { Map, Zap, TrendingUp, CheckCircle2, Bot, Command } from 'lucide-react'
 import { clsx } from 'clsx'
 
-const primary = [
-  { to: '/', label: 'Hoje', icon: Sun, end: true },
-  { to: '/objetivos', label: 'Objetivos', icon: Target },
-  { to: '/progresso', label: 'Progresso', icon: Trophy },
-  { to: '/assistente', label: 'Mentor IA', icon: Bot },
+// O ciclo do LifeOS (PDCA): Plan → Action → Progress → Check → volta ao Plan.
+const loop = [
+  { to: '/plan', label: 'Plan', sub: 'Planejar', icon: Map },
+  { to: '/', label: 'Action', sub: 'Executar hoje', icon: Zap, end: true },
+  { to: '/progress', label: 'Progress', sub: 'Medir', icon: TrendingUp },
+  { to: '/check', label: 'Check', sub: 'Avaliar', icon: CheckCircle2 },
 ]
-
-const advanced = [
-  { to: '/painel', label: 'Painel completo', icon: LayoutDashboard },
-  { to: '/projetos', label: 'Projetos & Decisões', icon: FolderKanban },
-  { to: '/ideias', label: 'Banco de Ideias', icon: Lightbulb },
-  { to: '/metas', label: 'Metas & Tarefas', icon: ListTree },
-  { to: '/lifescore', label: 'Life Score', icon: HeartPulse },
-  { to: '/revisoes', label: 'Revisões', icon: ClipboardCheck },
-]
-
-// Abas mostradas na barra inferior (mobile).
-const mobileTabs = [...primary, { to: '/painel', label: 'Painel', icon: LayoutDashboard }]
 
 export default function Layout() {
   return (
@@ -47,18 +24,34 @@ export default function Layout() {
           </div>
         </div>
 
+        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-600">O ciclo</p>
         <nav className="flex flex-col gap-1">
-          {primary.map((n) => (
-            <NavItem key={n.to} {...n} />
+          {loop.map((n, i) => (
+            <NavItem key={n.to} {...n} index={i + 1} />
           ))}
         </nav>
 
-        <p className="mt-6 mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-600">Avançado</p>
-        <nav className="flex flex-col gap-1">
-          {advanced.map((n) => (
-            <NavItem key={n.to} {...n} />
-          ))}
-        </nav>
+        <div className="mt-6">
+          <NavLink
+            to="/stark"
+            className={({ isActive }) =>
+              clsx(
+                'flex items-center gap-3 rounded-xl border px-3 py-3 transition',
+                isActive
+                  ? 'border-accent/40 bg-accent/[0.12] text-white'
+                  : 'border-accent/20 bg-accent/[0.06] text-ink-200 hover:bg-accent/[0.1]',
+              )
+            }
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
+              <Bot size={17} />
+            </div>
+            <div>
+              <p className="text-sm font-bold leading-tight text-white">STARK</p>
+              <p className="text-[10px] text-ink-400">Seu conselheiro pessoal</p>
+            </div>
+          </NavLink>
+        </div>
 
         <p className="mt-auto px-3 pt-6 text-[11px] leading-relaxed text-ink-600">
           "Qual a melhor coisa que você pode fazer hoje para construir a vida que deseja daqui a 10 anos?"
@@ -71,31 +64,48 @@ export default function Layout() {
         </main>
       </div>
 
+      {/* Barra inferior (mobile): o ciclo + STARK */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-white/5 bg-ink-950/95 px-2 py-2 backdrop-blur md:hidden">
-        {mobileTabs.map((n) => (
+        {loop.map((n) => (
           <MobileNavItem key={n.to} {...n} />
         ))}
+        <MobileNavItem to="/stark" label="STARK" icon={Bot} />
       </nav>
     </div>
   )
 }
 
-type Item = { to: string; label: string; icon: typeof Sun; end?: boolean }
+type Item = { to: string; label: string; sub?: string; icon: typeof Map; end?: boolean; index?: number }
 
-function NavItem({ to, label, icon: Icon, end }: Item) {
+function NavItem({ to, label, sub, icon: Icon, end, index }: Item) {
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
         clsx(
-          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-          isActive ? 'bg-white/[0.06] text-white' : 'text-ink-400 hover:bg-white/[0.03] hover:text-ink-100',
+          'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+          isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]',
         )
       }
     >
-      <Icon size={18} />
-      {label}
+      {({ isActive }) => (
+        <>
+          <div
+            className={clsx(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+              isActive ? 'bg-accent text-white' : 'bg-white/5 text-ink-500 group-hover:text-ink-300',
+            )}
+          >
+            {index}
+          </div>
+          <div className="flex-1">
+            <p className={clsx('text-sm font-semibold leading-tight', isActive ? 'text-white' : 'text-ink-300')}>{label}</p>
+            {sub && <p className="text-[11px] text-ink-600">{sub}</p>}
+          </div>
+          <Icon size={16} className={clsx(isActive ? 'text-accent-soft' : 'text-ink-600')} />
+        </>
+      )}
     </NavLink>
   )
 }
