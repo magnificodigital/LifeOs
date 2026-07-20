@@ -1,43 +1,43 @@
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import Layout from '@/components/Layout'
-import Action from '@/pages/Action'
+import Today from '@/pages/Today'
+import Agenda from '@/pages/Agenda'
+import Kanban from '@/pages/Kanban'
 import Plan from '@/pages/Plan'
 import Progress from '@/pages/Progress'
-import Check from '@/pages/Check'
 import Stark from '@/pages/Stark'
 import Finances from '@/pages/Finances'
 import Notes from '@/pages/Notes'
 import Connections from '@/pages/Connections'
-import Dashboard from '@/pages/Dashboard'
-import LifeScore from '@/pages/LifeScore'
-import Metas from '@/pages/Metas'
 
-// HashRouter: funciona em qualquer host estático sem configuração de servidor.
-// O app segue o ciclo PDCA: Plan → Action → Progress → Check.
+// Navegação PLANA: um clique para cada tela, sem abas aninhadas.
 const router = createHashRouter([
   {
     path: '/',
     element: <Layout />,
     children: [
-      { index: true, element: <Action /> }, // ACTION (Hoje + Kanban)
-      { path: 'plan', element: <Plan /> },
-      { path: 'progress', element: <Progress /> },
-      { path: 'check', element: <Check /> },
+      { index: true, element: <Today /> },
+      { path: 'agenda', element: <Agenda /> },
+      { path: 'planejar', element: <Plan /> },
+      { path: 'evolucao', element: <Progress /> },
       { path: 'stark', element: <Stark /> },
+      { path: 'kanban', element: <Kanban /> },
       { path: 'financas', element: <Finances /> },
       { path: 'notas', element: <Notes /> },
       { path: 'conexoes', element: <Connections /> },
-      // Secundárias
-      { path: 'painel', element: <Dashboard /> },
-      { path: 'lifescore', element: <LifeScore /> },
-      { path: 'metas', element: <Metas /> },
-      // Compatibilidade com rotas antigas
-      { path: 'objetivos', element: <Navigate to="/plan" replace /> },
-      { path: 'projetos', element: <Navigate to="/plan" replace /> },
-      { path: 'ideias', element: <Navigate to="/plan" replace /> },
+      // Rotas antigas → novas
+      { path: 'plan', element: <Navigate to="/planejar" replace /> },
+      { path: 'progress', element: <Navigate to="/evolucao" replace /> },
+      { path: 'progresso', element: <Navigate to="/evolucao" replace /> },
+      { path: 'check', element: <Navigate to="/evolucao" replace /> },
+      { path: 'revisoes', element: <Navigate to="/evolucao" replace /> },
+      { path: 'objetivos', element: <Navigate to="/planejar" replace /> },
+      { path: 'projetos', element: <Navigate to="/planejar" replace /> },
+      { path: 'ideias', element: <Navigate to="/planejar" replace /> },
       { path: 'assistente', element: <Navigate to="/stark" replace /> },
-      { path: 'progresso', element: <Navigate to="/progress" replace /> },
-      { path: 'revisoes', element: <Navigate to="/check" replace /> },
+      { path: 'painel', element: <Navigate to="/evolucao" replace /> },
+      { path: 'lifescore', element: <Navigate to="/" replace /> },
+      { path: 'metas', element: <Navigate to="/planejar" replace /> },
     ],
   },
 ])

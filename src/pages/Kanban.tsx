@@ -40,7 +40,6 @@ export default function Kanban() {
 
   return (
     <div>
-      <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Action · Quadro</p>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Kanban</h1>

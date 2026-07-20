@@ -1,13 +1,91 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { Flame, Zap, Lock } from 'lucide-react'
+import { Flame, Zap, Lock, Sparkles, ArrowRight } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useStore } from '@/lib/store'
 import { levelInfo, totalXp, computeStreak, achievements } from '@/lib/game'
-import { computeGoalProgress } from '@/lib/scoring'
+import { computeCheck, suggestPlanAdjustments } from '@/lib/check'
+import { computeGoalProgress, scoreColor } from '@/lib/scoring'
 import { LIFE_AREAS } from '@/lib/types'
 import { Card, Fade, PageHeader, ProgressBar, ScoreRing } from '@/components/ui'
 import { todayISO, formatDatePt } from '@/lib/utils'
+
+/** Resumo da avaliação: planejado × feito por área + sugestões do STARK. */
+function CheckSummary() {
+  const store = useStore()
+  const [period, setPeriod] = useState<'hoje' | 'semana'>('hoje')
+  const today = todayISO()
+  const input = {
+    goals: store.goals,
+    metas: store.metas,
+    habits: store.habits,
+    habitLog: store.habitLog,
+    tasks: store.tasks,
+    today,
+  }
+  const result = useMemo(() => computeCheck(period, input), [period, store.habits, store.habitLog, store.tasks, store.goals, store.metas])
+  const adjustments = useMemo(() => suggestPlanAdjustments(result, input), [result])
+
+  return (
+    <Fade>
+      <Card className="mb-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="section-title">Como foi</p>
+          <div className="inline-flex rounded-lg border border-white/10 p-0.5">
+            {(['hoje', 'semana'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={clsx('rounded-md px-3 py-1 text-xs font-medium capitalize', period === p ? 'bg-white/10 text-white' : 'text-ink-400')}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="text-center">
+            <p className="text-3xl font-bold" style={{ color: scoreColor(result.pct) }}>
+              {result.pct}%
+            </p>
+            <p className="text-[10px] uppercase tracking-wide text-ink-500">
+              {result.totalDone}/{result.totalPlanned} feitos
+            </p>
+          </div>
+          <div className="min-w-[200px] flex-1 space-y-2">
+            {result.areas.slice(0, 4).map((a) => (
+              <div key={a.area} className="flex items-center gap-2 text-xs">
+                <span className="w-28 shrink-0 truncate text-ink-400">
+                  {a.emoji} {a.label}
+                </span>
+                <div className="flex-1">
+                  <ProgressBar value={a.pct} />
+                </div>
+                <span className="w-8 text-right font-semibold text-ink-300">{a.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {adjustments.slice(0, 2).map((a, i) => (
+            <div key={i} className="flex items-start gap-2 rounded-xl border border-accent/15 bg-accent/[0.05] p-2.5 text-sm text-ink-200">
+              <Sparkles size={13} className="mt-0.5 shrink-0 text-accent-soft" />
+              <span>
+                {a.emoji} {a.text}
+              </span>
+            </div>
+          ))}
+        </div>
+        <Link to="/planejar" className="btn-ghost mt-2 !px-0 text-sm text-accent-soft">
+          Ajustar no Planejar <ArrowRight size={14} />
+        </Link>
+      </Card>
+    </Fade>
+  )
+}
 
 export default function Progress() {
   const store = useStore()
@@ -36,8 +114,10 @@ export default function Progress() {
 
   return (
     <div>
-      <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Progress · Medir</p>
-      <PageHeader title="Progresso" subtitle="Sua evolução em números — nível, ofensiva, conquistas e trajetória. Os fatos; a reflexão fica no Check." />
+      <PageHeader title="Evolução" subtitle="Como foi o dia, o que ajustar e sua trajetória — números, conquistas e avanço dos objetivos." />
+
+      {/* Avaliação: planejado × feito + o que ajustar */}
+      <CheckSummary />
 
       {/* Perfil de jogo */}
       <Fade>

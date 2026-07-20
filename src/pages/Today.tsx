@@ -35,9 +35,11 @@ export default function Today() {
 
   return (
     <div>
+      {/* Guia rápido (dispensável) */}
+      <Explainer />
+
       {/* Cabeçalho + nível */}
       <Fade>
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-soft">Action · Executar hoje</p>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">{greeting} 👋</h1>
@@ -163,6 +165,9 @@ export default function Today() {
         </Card>
       </Fade>
 
+      {/* Agenda de hoje (reuniões e tarefas com horário) */}
+      <TodaySchedule />
+
       {/* Objetivo prioritário — próximo passo */}
       {priorityGoal && (
         <Fade delay={0.1}>
@@ -194,6 +199,70 @@ export default function Today() {
         </Fade>
       )}
     </div>
+  )
+}
+
+/** Guia de 3 passos — some para sempre depois de dispensado. */
+function Explainer() {
+  const [hidden, setHidden] = useState(() => localStorage.getItem('lifeos-hint') === '1')
+  if (hidden) return null
+  return (
+    <div className="mb-5 rounded-2xl border border-accent/20 bg-accent/[0.06] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm leading-relaxed text-ink-200">
+          <p className="mb-1 font-semibold text-white">Como o LifeOS funciona (só isso):</p>
+          <p>
+            <strong className="text-accent-soft">1. Planejar</strong> — defina objetivos e escolha UM projeto para focar.{' '}
+            <strong className="text-accent-soft">2. Hoje</strong> — execute as missões e tarefas do dia.{' '}
+            <strong className="text-accent-soft">3. Evolução</strong> — veja o que funcionou e ajuste.
+          </p>
+          <p className="mt-1 text-ink-400">O STARK te acompanha em tudo. O resto é detalhe.</p>
+        </div>
+        <button
+          className="btn-ghost shrink-0 !px-2 !py-1 text-xs"
+          onClick={() => {
+            localStorage.setItem('lifeos-hint', '1')
+            setHidden(true)
+          }}
+        >
+          Entendi ✓
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Compromissos de hoje: reuniões e tarefas com horário. */
+function TodaySchedule() {
+  const { tasks, projects } = useStore()
+  const today = todayISO()
+  const items = tasks
+    .filter((t) => t.date === today && (t.time || t.kind === 'reuniao'))
+    .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
+  if (items.length === 0) return null
+  const projTitle = (id?: string) => projects.find((p) => p.id === id)?.title
+  return (
+    <Fade delay={0.09}>
+      <Card className="mb-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="section-title">Agenda de hoje</p>
+          <Link to="/agenda" className="text-xs text-accent-soft hover:underline">
+            ver semana →
+          </Link>
+        </div>
+        <div className="space-y-1.5">
+          {items.map((t) => (
+            <div key={t.id} className={clsx('flex items-center gap-3 rounded-xl px-3 py-2 text-sm', t.kind === 'reuniao' ? 'border border-accent/25 bg-accent/[0.08]' : 'bg-white/[0.03]')}>
+              <span className={clsx('w-12 shrink-0 font-semibold', t.kind === 'reuniao' ? 'text-accent-soft' : 'text-ink-400')}>
+                {t.time ?? '—'}
+              </span>
+              <span className={clsx('flex-1', t.done ? 'text-ink-500 line-through' : 'text-ink-100')}>{t.title}</span>
+              {projTitle(t.projectId) && <span className="hidden text-[11px] text-ink-600 sm:block">{projTitle(t.projectId)}</span>}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </Fade>
   )
 }
 
