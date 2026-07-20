@@ -77,6 +77,7 @@ interface State {
   updateHabit: (id: string, patch: Partial<Habit>) => void
   removeHabit: (id: string) => void
   toggleHabit: (date: string, id: string) => void
+  moveHabit: (id: string, dir: -1 | 1) => void
 
   // Projects
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void
@@ -84,6 +85,7 @@ interface State {
   setProjectScores: (id: string, scores: ProjectScores) => void
   setInExecution: (id: string) => void
   removeProject: (id: string) => void
+  moveProject: (id: string, dir: -1 | 1) => void
 
   // Ideas
   addIdea: (i: Omit<Idea, 'id' | 'createdAt' | 'status'>) => void
@@ -111,6 +113,16 @@ interface State {
 }
 
 const step = (title: string, done = false) => ({ id: uid(), title, done })
+
+/** Move um item do array para cima (-1) ou para baixo (+1), imutável. */
+function reorder<T extends { id: string }>(arr: T[], id: string, dir: -1 | 1): T[] {
+  const i = arr.findIndex((x) => x.id === id)
+  const j = i + dir
+  if (i < 0 || j < 0 || j >= arr.length) return arr
+  const next = [...arr]
+  ;[next[i], next[j]] = [next[j], next[i]]
+  return next
+}
 
 // ---------------------------------------------------------------------------
 // Dados iniciais — os OBJETIVOS REAIS do usuário, já com plano de ação.
@@ -405,6 +417,7 @@ export const useStore = create<State>()(
       addHabit: (h) => set((st) => ({ habits: [...st.habits, { ...h, id: uid(), active: true, createdAt: todayISO() }] })),
       updateHabit: (id, patch) => set((st) => ({ habits: st.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)) })),
       removeHabit: (id) => set((st) => ({ habits: st.habits.filter((h) => h.id !== id) })),
+      moveHabit: (id, dir) => set((st) => ({ habits: reorder(st.habits, id, dir) })),
       toggleHabit: (date, id) =>
         set((st) => {
           const cur = st.habitLog[date] ?? []
@@ -426,6 +439,7 @@ export const useStore = create<State>()(
           ),
         })),
       removeProject: (id) => set((st) => ({ projects: st.projects.filter((p) => p.id !== id) })),
+      moveProject: (id, dir) => set((st) => ({ projects: reorder(st.projects, id, dir) })),
 
       addIdea: (i) => set((st) => ({ ideas: [...st.ideas, { ...i, id: uid(), status: 'novo', createdAt: todayISO() }] })),
       updateIdea: (id, patch) => set((st) => ({ ideas: st.ideas.map((i) => (i.id === id ? { ...i, ...patch } : i)) })),
