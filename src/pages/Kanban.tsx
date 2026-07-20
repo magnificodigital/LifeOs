@@ -18,11 +18,12 @@ const COL_ACCENT: Record<TaskStatus, string> = {
  * setas. Captura rápida no topo: escreva e Enter. (David Allen: tire da cabeça.)
  */
 export default function Kanban() {
-  const { tasks, metas, addTask, moveTask, toggleTask, setOneThing, removeTask } = useStore()
+  const { tasks, metas, projects, addTask, moveTask, toggleTask, setOneThing, removeTask } = useStore()
   const [title, setTitle] = useState('')
   const [drag, setDrag] = useState<string | null>(null)
 
   const metaTitle = (id?: string) => metas.find((m) => m.id === id)?.title
+  const projTitle = (id?: string) => projects.find((p) => p.id === id)?.title
 
   const add = () => {
     if (!title.trim()) return
@@ -97,9 +98,9 @@ export default function Kanban() {
                         <Trash2 size={13} />
                       </button>
                     </div>
-                    {metaTitle(t.metaId) && (
-                      <p className="mt-1 flex items-center gap-1 text-[11px] text-ink-600">
-                        <Link2 size={10} /> {metaTitle(t.metaId)}
+                    {(projTitle(t.projectId) || metaTitle(t.metaId)) && (
+                      <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-ink-600">
+                        <Link2 size={10} className="shrink-0" /> {projTitle(t.projectId) ?? metaTitle(t.metaId)}
                       </p>
                     )}
                     <div className="mt-2 flex items-center justify-between">

@@ -93,18 +93,25 @@ export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
 ]
 
 /**
- * Tarefa. Vinculada a uma meta (metaId) quando possível — mas capturar rápido
- * importa mais que preencher tudo. O Kanban a move entre colunas.
+ * Tarefa. Vinculada a uma meta (metaId) e/ou a um projeto (projectId) quando
+ * possível — mas capturar rápido importa mais que preencher tudo.
+ * O Kanban a move entre colunas; a Agenda a mostra por dia/horário.
  */
 export interface Task {
   id: string
   title: string
   metaId?: string
+  /** Projeto que gerou esta tarefa — alinha execução com o Plan. */
+  projectId?: string
   status: TaskStatus
   done: boolean
   /** Marcada como a "One Thing" do dia (a tarefa 80/20). */
   isOneThing?: boolean
   date: string // ISO date (dia planejado)
+  /** Horário (HH:MM) — para reuniões e blocos com hora marcada. */
+  time?: string
+  /** Tarefa comum ou reunião (aparece destacada na Agenda). */
+  kind?: 'tarefa' | 'reuniao'
   createdAt: string
 }
 

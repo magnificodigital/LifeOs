@@ -59,6 +59,7 @@ interface State {
   // Tasks
   addTask: (t: Omit<Task, 'id' | 'createdAt' | 'done' | 'status'> & { status?: TaskStatus }) => void
   toggleTask: (id: string) => void
+  updateTask: (id: string, patch: Partial<Task>) => void
   moveTask: (id: string, status: TaskStatus) => void
   setOneThing: (id: string) => void
   removeTask: (id: string) => void
@@ -241,11 +242,19 @@ function seed() {
     { id: 'm-s2', horizon: 'semanal', title: 'Treinar 4×', goalId: 'g-peso', done: false, createdAt: todayISO() },
   ]
 
+  const tomorrow = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().slice(0, 10)
+  })()
+
   const tasks: Task[] = [
-    { id: 't1', title: 'Definir minha oferta principal em 1 frase', metaId: 'm-s1', status: 'hoje', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
-    { id: 't2', title: 'Listar meus projetos em aberto', metaId: 'm-s1', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
-    { id: 't3', title: 'Escolher o próximo livro para ler', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
-    { id: 't4', title: 'Agendar 4 treinos na semana', metaId: 'm-s2', status: 'fazendo', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't1', title: 'Mapear 10 agências parceiras em potencial', projectId: 'p-aikortex', metaId: 'm-s1', status: 'hoje', done: false, isOneThing: true, date: todayISO(), createdAt: todayISO() },
+    { id: 't2', title: 'Definir oferta e preço do Aikortex em 1 página', projectId: 'p-aikortex', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't3', title: 'Escrever oferta da mentoria (o que, para quem, quanto)', projectId: 'p-consultoria', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't4', title: 'Landing + lista de espera do HackHuman', projectId: 'p-hackhuman', status: 'backlog', done: false, date: todayISO(), createdAt: todayISO() },
+    { id: 't5', title: 'Reunião: demo do Aikortex para 1ª agência', projectId: 'p-aikortex', status: 'hoje', done: false, date: tomorrow, time: '15:00', kind: 'reuniao', createdAt: todayISO() },
+    { id: 't6', title: 'Agendar 4 treinos na semana', metaId: 'm-s2', status: 'fazendo', done: false, date: todayISO(), createdAt: todayISO() },
   ]
 
   const notes: Note[] = [
@@ -259,24 +268,43 @@ function seed() {
     complexidade: 5, automacao: 5, sinergia: 5, potencialIA: 5, ...s,
   })
 
-  // Exemplos de projetos para a IA demonstrar "por onde começar". Edite à vontade.
+  // Os projetos REAIS do usuário. Edite notas e descrições à vontade —
+  // a prioridade é recalculada na hora.
   const projects: Project[] = [
     {
-      id: 'p-serv', title: 'Serviço/Freelance (renda rápida)', status: 'backlog', goalId: 'g-renda',
-      description: 'Dinheiro entra rápido, mas troca tempo por dinheiro — pouca escala.',
-      scores: mk({ impactoFinanceiro: 7, proposito: 4, escalabilidade: 2, tempoRetorno: 9, complexidade: 8, automacao: 2, sinergia: 4, potencialIA: 3 }),
+      id: 'p-aikortex', title: 'Aikortex', status: 'backlog', goalId: 'g-renda',
+      description: 'Software para agências criarem e automatizarem agentes de IA para seus clientes. Modelo: agências como parceiras vendendo por mim — canal de vendas escalável e receita recorrente.',
+      scores: mk({ impactoFinanceiro: 9, proposito: 8, escalabilidade: 9, tempoRetorno: 6, complexidade: 4, automacao: 8, sinergia: 9, potencialIA: 10 }),
       createdAt: todayISO(),
     },
     {
-      id: 'p-prod', title: 'Produto digital / SaaS', status: 'backlog', goalId: 'g-renda',
-      description: 'Recorrente e escalável, retorno mais lento no começo.',
-      scores: mk({ impactoFinanceiro: 8, proposito: 8, escalabilidade: 9, tempoRetorno: 4, complexidade: 5, automacao: 8, sinergia: 7, potencialIA: 9 }),
+      id: 'p-consultoria', title: 'Consultoria / Mentoria', status: 'backlog', goalId: 'g-renda',
+      description: '20 anos de marketing digital, tecnologia e design a serviço de empresas e pessoas. Não escala, mas é o caixa mais rápido — e cada cliente é um parceiro/case em potencial para o Aikortex.',
+      scores: mk({ impactoFinanceiro: 7, proposito: 6, escalabilidade: 3, tempoRetorno: 9, complexidade: 8, automacao: 2, sinergia: 8, potencialIA: 5 }),
       createdAt: todayISO(),
     },
     {
-      id: 'p-cons', title: 'Consultoria 1:1', status: 'backlog',
-      description: 'Alto valor por hora, valida a oferta, mas não escala.',
-      scores: mk({ impactoFinanceiro: 7, proposito: 6, escalabilidade: 3, tempoRetorno: 8, complexidade: 7, automacao: 3, sinergia: 6, potencialIA: 4 }),
+      id: 'p-nutrehack', title: 'NutreHack', status: 'incubacao', goalId: 'g-renda',
+      description: 'Alimentação saudável vendida por IA (modelo OK Capsule; concorrente BR: SetYou). Bloqueios: investimento inicial para produzir/terceirizar e custo de anunciar nos EUA.',
+      scores: mk({ impactoFinanceiro: 7, proposito: 8, escalabilidade: 8, tempoRetorno: 3, complexidade: 3, automacao: 6, sinergia: 5, potencialIA: 8 }),
+      createdAt: todayISO(),
+    },
+    {
+      id: 'p-hackhuman', title: 'HackHuman', status: 'incubacao', goalId: 'g-renda',
+      description: 'Loja de produtos para biohackers: pulseiras inteligentes (com app próprio), dilatador nasal, purificador de água, óculos bloqueadores de azul. Bloqueio: capital de importação — hipótese: lista de espera com pagamento antecipado para financiar o primeiro lote.',
+      scores: mk({ impactoFinanceiro: 6, proposito: 9, escalabilidade: 6, tempoRetorno: 4, complexidade: 4, automacao: 5, sinergia: 8, potencialIA: 5 }),
+      createdAt: todayISO(),
+    },
+    {
+      id: 'p-livros', title: 'Livros — Hackeando a Humanidade + Humanoide x Humanoias', status: 'backlog', goalId: 'g-lancar',
+      description: '"Hackeando a Humanidade" já lançado (falta divulgar); "Humanoide x Humanoias" em escrita. Pouco dinheiro direto, mas constroem autoridade que puxa consultoria, HackHuman e audiência.',
+      scores: mk({ impactoFinanceiro: 3, proposito: 9, escalabilidade: 6, tempoRetorno: 5, complexidade: 7, automacao: 7, sinergia: 9, potencialIA: 6 }),
+      createdAt: todayISO(),
+    },
+    {
+      id: 'p-jarvis', title: 'Assistente de voz em ESP32-S3 (nicho: hotéis)', status: 'incubacao', goalId: 'g-renda',
+      description: 'Assistente tipo Alexa embarcado em ESP32-S3 para nichos como hotelaria. Hardware = complexidade alta (produção, suporte, certificação) e retorno lento.',
+      scores: mk({ impactoFinanceiro: 6, proposito: 7, escalabilidade: 5, tempoRetorno: 3, complexidade: 2, automacao: 4, sinergia: 6, potencialIA: 9 }),
       createdAt: todayISO(),
     },
   ]
@@ -350,6 +378,8 @@ export const useStore = create<State>()(
             return { ...t, done, status: done ? 'feito' : t.status === 'feito' ? 'hoje' : t.status }
           }),
         })),
+      updateTask: (id, patch) =>
+        set((st) => ({ tasks: st.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
       moveTask: (id, status) =>
         set((st) => ({
           tasks: st.tasks.map((t) => (t.id === id ? { ...t, status, done: status === 'feito' } : t)),
@@ -436,6 +466,6 @@ export const useStore = create<State>()(
       resetAll: () =>
         set({ ...seed(), dailyReviews: [], weeklyReviews: [], chat: [], ai: defaultAiSettings(), integrations: {}, supabase: {} }),
     }),
-    { name: 'lifeos-ai-v4' },
+    { name: 'lifeos-ai-v5' },
   ),
 )

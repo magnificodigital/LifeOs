@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Sun, Columns3 } from 'lucide-react'
+import { Sun, Columns3, CalendarDays } from 'lucide-react'
 import { clsx } from 'clsx'
 import Today from './Today'
 import Kanban from './Kanban'
+import Agenda from './Agenda'
 
-/** ACTION — a execução do dia: o painel gamificado "Hoje" e o Kanban de tarefas. */
+/** ACTION — a execução: o dia gamificado, o Kanban de tarefas e a Agenda da semana. */
 export default function Action() {
-  const [tab, setTab] = useState<'hoje' | 'quadro'>('hoje')
+  const [tab, setTab] = useState<'hoje' | 'quadro' | 'agenda'>('hoje')
   return (
     <div>
       <div className="mb-5 inline-flex rounded-xl border border-white/10 p-1">
@@ -14,6 +15,7 @@ export default function Action() {
           [
             { k: 'hoje', label: 'Hoje', icon: Sun },
             { k: 'quadro', label: 'Kanban', icon: Columns3 },
+            { k: 'agenda', label: 'Agenda', icon: CalendarDays },
           ] as const
         ).map((t) => (
           <button
@@ -28,7 +30,9 @@ export default function Action() {
           </button>
         ))}
       </div>
-      {tab === 'hoje' ? <Today /> : <Kanban />}
+      {tab === 'hoje' && <Today />}
+      {tab === 'quadro' && <Kanban />}
+      {tab === 'agenda' && <Agenda />}
     </div>
   )
 }
